@@ -27,7 +27,7 @@ export const AndroidBottomNav: React.FC<AndroidBottomNavProps> = ({
           }`}
         >
           <BookOpen className="w-4 h-4 mb-0.5" />
-          <span className="text-[10px] tracking-tight">50 Q&A</span>
+          <span className="text-[10px] tracking-tight">160 Q&A</span>
         </button>
 
         {/* Tab 2: Topics & Filter Drawer */}

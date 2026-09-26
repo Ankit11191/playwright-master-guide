@@ -34,7 +34,7 @@ export const Header: React.FC<HeaderProps> = ({
       {!isOnline && (
         <div className="bg-amber-600 text-white text-[11px] font-semibold py-1 px-4 text-center flex items-center justify-center gap-1.5 shadow-inner">
           <WifiOff className="w-3.5 h-3.5" />
-          <span>Offline Mode Active — All 50 Questions & Code Cached for Offline Reading</span>
+          <span>Offline Mode Active — 160 Questions & Code Cached for Offline Reading</span>
         </div>
       )}
 
@@ -51,7 +51,10 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-base font-bold tracking-tight text-slate-900 group-hover:text-emerald-700 transition-colors">
-                  Playwright 50
+                  Playwright Master Guide
+                </span>
+                <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  160 Q&A
                 </span>
               </div>
             </button>
@@ -69,7 +72,7 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <span className="flex items-center gap-1.5">
                 <BookOpen className="w-4 h-4 text-emerald-600" />
-                All 50 Q&A
+                All 160 Q&A
               </span>
             </button>
 

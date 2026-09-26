@@ -29,31 +29,54 @@ export const StudyFlashcards: React.FC<StudyFlashcardsProps> = ({
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
-  const [activeDeck, setActiveDeck] = useState<PlaywrightQuestion[]>(questions);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('All');
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+
+  // Derive unique categories
+  const categories = React.useMemo(() => {
+    const set = new Set<string>();
+    questions.forEach((q) => set.add(q.category));
+    return Array.from(set);
+  }, [questions]);
+
+  // Compute filtered deck
+  const activeDeck = React.useMemo(() => {
+    return questions.filter((q) => {
+      if (selectedDifficulty !== 'All' && q.difficulty !== selectedDifficulty) {
+        return false;
+      }
+      if (selectedCategory !== 'All' && q.category !== selectedCategory) {
+        return false;
+      }
+      return true;
+    });
+  }, [questions, selectedDifficulty, selectedCategory]);
 
   useEffect(() => {
-    setActiveDeck(questions);
     setCurrentIndex(0);
     setIsFlipped(false);
-  }, [questions]);
+  }, [selectedDifficulty, selectedCategory]);
 
   const currentQ = activeDeck[currentIndex] || activeDeck[0];
 
   const handleNext = useCallback(() => {
+    if (activeDeck.length === 0) return;
     setIsFlipped(false);
     setCurrentIndex((prev) => (prev + 1) % activeDeck.length);
   }, [activeDeck.length]);
 
   const handlePrev = useCallback(() => {
+    if (activeDeck.length === 0) return;
     setIsFlipped(false);
     setCurrentIndex((prev) => (prev - 1 + activeDeck.length) % activeDeck.length);
   }, [activeDeck.length]);
 
   const handleShuffle = () => {
+    if (activeDeck.length <= 1) return;
     setIsFlipped(false);
-    const shuffled = [...activeDeck].sort(() => Math.random() - 0.5);
-    setActiveDeck(shuffled);
-    setCurrentIndex(0);
+    // Jump to random card
+    const randomIdx = Math.floor(Math.random() * activeDeck.length);
+    setCurrentIndex(randomIdx);
   };
 
   // Keyboard navigation
@@ -75,74 +98,142 @@ export const StudyFlashcards: React.FC<StudyFlashcardsProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleNext, handlePrev]);
 
-  if (!currentQ) {
-    return <div className="p-8 text-center text-slate-500">No questions available.</div>;
-  }
-
-  const isMastered = masteredIds.has(currentQ.id);
-  const isBookmarked = bookmarkedIds.has(currentQ.id);
-
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-      {/* Top Controls & Counter */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200">
-        <div>
-          <h2 className="text-base font-bold text-slate-900">
-            Active Recall Study Mode
-          </h2>
-          <p className="text-xs text-slate-500">
-            Card <span className="font-mono font-semibold tabular-nums text-slate-800">{currentIndex + 1}</span> of <span className="font-mono tabular-nums">{activeDeck.length}</span>
-            <span aria-hidden="true" className="mx-2">·</span>
-            Press <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-slate-100 border border-slate-300 rounded text-slate-700">Space</kbd> to flip, <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-slate-100 border border-slate-300 rounded text-slate-700">←</kbd> <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-slate-100 border border-slate-300 rounded text-slate-700">→</kbd> to navigate
-          </p>
-        </div>
+      {/* Deck Filter Strip (Difficulty & Category) */}
+      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2.5">
+          {/* Difficulty Chips */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mr-1">
+              Difficulty:
+            </span>
+            {['All', 'Beginner', 'Intermediate', 'Advanced'].map((diff) => {
+              const isSelected = selectedDifficulty === diff;
+              const count = questions.filter(
+                (q) => (diff === 'All' || q.difficulty === diff) && (selectedCategory === 'All' || q.category === selectedCategory)
+              ).length;
+              return (
+                <button
+                  key={diff}
+                  onClick={() => setSelectedDifficulty(diff)}
+                  className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-all flex items-center gap-1 cursor-pointer ${
+                    isSelected
+                      ? 'bg-slate-900 text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  <span>{diff === 'All' ? 'All Levels' : diff}</span>
+                  <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                    isSelected ? 'bg-slate-800 text-white' : 'bg-slate-200 text-slate-700'
+                  }`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleShuffle}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
-            title="Randomize Deck"
-          >
-            <Shuffle className="w-3.5 h-3.5" />
-            <span>Shuffle</span>
-          </button>
-
-          <button
-            onClick={() => onToggleBookmark(currentQ.id)}
-            className={`p-2 rounded-lg transition-colors ${
-              isBookmarked
-                ? 'bg-amber-100 text-amber-600'
-                : 'bg-slate-100 text-slate-500 hover:text-slate-800'
-            }`}
-            title="Star Question"
-          >
-            <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-amber-500' : ''}`} />
-          </button>
-
-          <button
-            onClick={() => onToggleMastered(currentQ.id)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
-              isMastered
-                ? 'bg-emerald-600 text-white'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            <CheckCircle className="w-4 h-4" />
-            <span>{isMastered ? 'Mastered' : 'Mark Mastered'}</span>
-          </button>
+          {/* Category Dropdown */}
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              Topic:
+            </span>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-emerald-500 max-w-[220px] truncate"
+            >
+              <option value="All">All Categories ({categories.length})</option>
+              {categories.map((cat) => {
+                const count = questions.filter(
+                  (q) => q.category === cat && (selectedDifficulty === 'All' || q.difficulty === selectedDifficulty)
+                ).length;
+                return (
+                  <option key={cat} value={cat}>
+                    {cat} ({count})
+                  </option>
+                );
+              })}
+            </select>
+          </div>
         </div>
       </div>
 
-      {/* Progress Bar */}
-      <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-        <div
-          className="bg-emerald-600 h-full transition-all duration-300"
-          style={{ width: `${((currentIndex + 1) / activeDeck.length) * 100}%` }}
-        />
-      </div>
+      {activeDeck.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-3">
+          <p className="text-sm font-semibold text-slate-800">No flashcards found for this filter combination.</p>
+          <button
+            onClick={() => {
+              setSelectedDifficulty('All');
+              setSelectedCategory('All');
+            }}
+            className="px-4 py-2 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg"
+          >
+            Reset Filters
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* Top Controls & Counter */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200">
+            <div>
+              <h2 className="text-base font-bold text-slate-900">
+                Active Recall Study Mode
+              </h2>
+              <p className="text-xs text-slate-500">
+                Card <span className="font-mono font-semibold tabular-nums text-slate-800">{currentIndex + 1}</span> of <span className="font-mono tabular-nums">{activeDeck.length}</span>
+                <span aria-hidden="true" className="mx-2">·</span>
+                Press <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-slate-100 border border-slate-300 rounded text-slate-700">Space</kbd> to flip, <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-slate-100 border border-slate-300 rounded text-slate-700">←</kbd> <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-slate-100 border border-slate-300 rounded text-slate-700">→</kbd> to navigate
+              </p>
+            </div>
 
-      {/* The Flashcard Body */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-md p-6 sm:p-8 min-h-[380px] flex flex-col justify-between transition-all">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleShuffle}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+                title="Randomize Card"
+              >
+                <Shuffle className="w-3.5 h-3.5" />
+                <span>Shuffle</span>
+              </button>
+
+              <button
+                onClick={() => onToggleBookmark(currentQ.id)}
+                className={`p-2 rounded-lg transition-colors cursor-pointer ${
+                  bookmarkedIds.has(currentQ.id)
+                    ? 'bg-amber-100 text-amber-600'
+                    : 'bg-slate-100 text-slate-500 hover:text-slate-800'
+                }`}
+                title="Star Question"
+              >
+                <Bookmark className={`w-4 h-4 ${bookmarkedIds.has(currentQ.id) ? 'fill-amber-500' : ''}`} />
+              </button>
+
+              <button
+                onClick={() => onToggleMastered(currentQ.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+                  masteredIds.has(currentQ.id)
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                <CheckCircle className="w-4 h-4" />
+                <span>{masteredIds.has(currentQ.id) ? 'Mastered' : 'Mark Mastered'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+            <div
+              className="bg-emerald-600 h-full transition-all duration-300"
+              style={{ width: `${((currentIndex + 1) / activeDeck.length) * 100}%` }}
+            />
+          </div>
+
+          {/* The Flashcard Body */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-md p-6 sm:p-8 min-h-[380px] flex flex-col justify-between transition-all">
         {/* Card Header */}
         <div className="flex items-center justify-between text-xs text-slate-500 pb-4 border-b border-slate-100">
           <div className="flex items-center gap-2">
@@ -265,6 +356,8 @@ export const StudyFlashcards: React.FC<StudyFlashcardsProps> = ({
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
-    </div>
+    </>
+  )}
+</div>
   );
 };

@@ -1,5 +1,5 @@
-import React from 'react';
-import { X, Check, Bookmark, CheckCircle, Search, SlidersHorizontal, RotateCcw } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Check, Bookmark, CheckCircle, Search, SlidersHorizontal, GraduationCap } from 'lucide-react';
 import { PLAYWRIGHT_QUESTIONS } from '../data/playwrightQuestions';
 
 interface AndroidTopicDrawerProps {
@@ -19,6 +19,12 @@ interface AndroidTopicDrawerProps {
   onSelectQuestion: (id: number) => void;
   onResetFilters: () => void;
   hasActiveFilters: boolean;
+  difficultyCounts?: {
+    All: number;
+    Beginner: number;
+    Intermediate: number;
+    Advanced: number;
+  };
 }
 
 export const AndroidTopicDrawer: React.FC<AndroidTopicDrawerProps> = ({
@@ -38,8 +44,26 @@ export const AndroidTopicDrawer: React.FC<AndroidTopicDrawerProps> = ({
   onSelectQuestion,
   onResetFilters,
   hasActiveFilters,
+  difficultyCounts,
 }) => {
+  const [jumpRange, setJumpRange] = useState<'1-50' | '51-100' | '101-160' | 'all'>('1-50');
+
   if (!isOpen) return null;
+
+  const totalQuestions = PLAYWRIGHT_QUESTIONS.length;
+  const diffCounts = difficultyCounts || {
+    All: totalQuestions,
+    Beginner: PLAYWRIGHT_QUESTIONS.filter(q => q.difficulty === 'Beginner').length,
+    Intermediate: PLAYWRIGHT_QUESTIONS.filter(q => q.difficulty === 'Intermediate').length,
+    Advanced: PLAYWRIGHT_QUESTIONS.filter(q => q.difficulty === 'Advanced').length,
+  };
+
+  const jumpQuestions = PLAYWRIGHT_QUESTIONS.filter((q) => {
+    if (jumpRange === '1-50') return q.id >= 1 && q.id <= 50;
+    if (jumpRange === '51-100') return q.id >= 51 && q.id <= 100;
+    if (jumpRange === '101-160') return q.id >= 101 && q.id <= 160;
+    return true;
+  });
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex flex-col justify-end sm:justify-center p-0 sm:p-4">
@@ -55,7 +79,7 @@ export const AndroidTopicDrawer: React.FC<AndroidTopicDrawerProps> = ({
           <div className="flex items-center gap-2">
             <SlidersHorizontal className="w-4 h-4 text-emerald-600" />
             <h3 className="text-base font-bold text-slate-900">
-              Topics & Question Filters
+              Categories & Difficulty Filter
             </h3>
           </div>
 
@@ -94,38 +118,77 @@ export const AndroidTopicDrawer: React.FC<AndroidTopicDrawerProps> = ({
             </div>
           </div>
 
+          {/* Difficulty Level with Dynamic Counts */}
+          <div>
+            <div className="flex items-center gap-1.5 mb-2">
+              <GraduationCap className="w-4 h-4 text-slate-500" />
+              <span className="font-bold text-slate-800">Difficulty Level</span>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {[
+                { lvl: 'All', label: 'All Levels', count: diffCounts.All, color: 'border-slate-300' },
+                { lvl: 'Beginner', label: 'Beginner', count: diffCounts.Beginner, color: 'border-emerald-300 text-emerald-800' },
+                { lvl: 'Intermediate', label: 'Intermediate', count: diffCounts.Intermediate, color: 'border-blue-300 text-blue-800' },
+                { lvl: 'Advanced', label: 'Advanced', count: diffCounts.Advanced, color: 'border-purple-300 text-purple-800' },
+              ].map(({ lvl, label, count, color }) => {
+                const isSelected = selectedDifficulty === lvl;
+                return (
+                  <button
+                    key={lvl}
+                    onClick={() => setSelectedDifficulty(lvl)}
+                    className={`py-2 px-3 text-left rounded-lg transition-colors flex items-center justify-between border ${color} ${
+                      isSelected
+                        ? 'bg-slate-900 text-white font-semibold border-slate-900 shadow-xs'
+                        : 'bg-slate-50 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span>{label}</span>
+                    <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
+                      isSelected ? 'bg-slate-800 text-white' : 'bg-slate-200 text-slate-700'
+                    }`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Topics / Categories */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="font-bold text-slate-800">Select Topic / Domain</span>
+              <span className="font-bold text-slate-800">Select Topic Domain</span>
               <span className="text-[11px] text-slate-400">8 Categories</span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
               <button
-                onClick={() => {
-                  setSelectedCategory('All');
-                }}
+                onClick={() => setSelectedCategory('All')}
                 className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center justify-between ${
                   selectedCategory === 'All'
                     ? 'bg-slate-900 text-white font-semibold'
                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
-                <span>All Topics (50 Questions)</span>
+                <span>All Topics ({totalQuestions})</span>
                 {selectedCategory === 'All' && <Check className="w-3.5 h-3.5" />}
               </button>
 
               {categories.map((cat) => {
-                const count = PLAYWRIGHT_QUESTIONS.filter((q) => q.category === cat).length;
+                const count = PLAYWRIGHT_QUESTIONS.filter((q) => 
+                  q.category === cat && (selectedDifficulty === 'All' || q.difficulty === selectedDifficulty)
+                ).length;
                 const isSelected = selectedCategory === cat;
                 return (
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
+                    disabled={count === 0 && selectedDifficulty !== 'All'}
                     className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center justify-between ${
                       isSelected
                         ? 'bg-emerald-600 text-white font-semibold'
+                        : count === 0
+                        ? 'bg-slate-50 text-slate-400 opacity-50 cursor-default'
                         : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                     }`}
                   >
@@ -137,32 +200,12 @@ export const AndroidTopicDrawer: React.FC<AndroidTopicDrawerProps> = ({
             </div>
           </div>
 
-          {/* Difficulty Level */}
-          <div>
-            <span className="font-bold text-slate-800 block mb-2">Difficulty Level</span>
-            <div className="grid grid-cols-4 gap-1.5">
-              {['All', 'Beginner', 'Intermediate', 'Advanced'].map((lvl) => (
-                <button
-                  key={lvl}
-                  onClick={() => setSelectedDifficulty(lvl)}
-                  className={`py-2 px-1 text-center rounded-lg transition-colors ${
-                    selectedDifficulty === lvl
-                      ? 'bg-slate-900 text-white font-semibold'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
-                >
-                  {lvl}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Status Filter */}
           <div>
             <span className="font-bold text-slate-800 block mb-2">Study Progress Status</span>
             <div className="grid grid-cols-2 gap-1.5">
               {[
-                { id: 'all', label: 'All (50)', icon: null },
+                { id: 'all', label: `All (${totalQuestions})`, icon: null },
                 { id: 'mastered', label: `Mastered (${masteredIds.size})`, icon: CheckCircle },
                 { id: 'unmastered', label: 'Needs Practice', icon: null },
                 { id: 'bookmarked', label: `Starred (${bookmarkedIds.size})`, icon: Bookmark },
@@ -183,11 +226,34 @@ export const AndroidTopicDrawer: React.FC<AndroidTopicDrawerProps> = ({
             </div>
           </div>
 
-          {/* Quick Question Picker Grid (1-50) */}
+          {/* Quick Question Picker Grid (1-160 with range tabs) */}
           <div>
-            <span className="font-bold text-slate-800 block mb-2">Jump to Specific Question (1–50)</span>
-            <div className="grid grid-cols-10 gap-1.5">
-              {PLAYWRIGHT_QUESTIONS.map((q) => {
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-bold text-slate-800">Jump to Question (1–{totalQuestions})</span>
+              <div className="flex gap-1 text-[10px]">
+                <button
+                  onClick={() => setJumpRange('1-50')}
+                  className={`px-1.5 py-0.5 rounded ${jumpRange === '1-50' ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-700'}`}
+                >
+                  1-50
+                </button>
+                <button
+                  onClick={() => setJumpRange('51-100')}
+                  className={`px-1.5 py-0.5 rounded ${jumpRange === '51-100' ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-700'}`}
+                >
+                  51-100
+                </button>
+                <button
+                  onClick={() => setJumpRange('101-160')}
+                  className={`px-1.5 py-0.5 rounded ${jumpRange === '101-160' ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-700'}`}
+                >
+                  101-160
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-10 gap-1.5 max-h-48 overflow-y-auto">
+              {jumpQuestions.map((q) => {
                 const isM = masteredIds.has(q.id);
                 const isB = bookmarkedIds.has(q.id);
                 let btnCls = "bg-slate-100 text-slate-700 hover:bg-slate-200";
@@ -202,7 +268,7 @@ export const AndroidTopicDrawer: React.FC<AndroidTopicDrawerProps> = ({
                       onClose();
                     }}
                     className={`h-7 rounded text-xs font-mono tabular-nums flex items-center justify-center ${btnCls}`}
-                    title={`Q${q.id}: ${q.question}`}
+                    title={`Q${q.id} [${q.difficulty}]: ${q.question}`}
                   >
                     {q.id}
                   </button>
@@ -215,9 +281,7 @@ export const AndroidTopicDrawer: React.FC<AndroidTopicDrawerProps> = ({
         {/* Footer Actions */}
         <div className="p-4 border-t border-slate-100 flex items-center gap-3 shrink-0">
           <button
-            onClick={() => {
-              onResetFilters();
-            }}
+            onClick={onResetFilters}
             className="flex-1 py-2.5 px-3 border border-slate-200 text-slate-700 font-semibold rounded-xl text-xs hover:bg-slate-50 transition-colors"
           >
             Reset Filters

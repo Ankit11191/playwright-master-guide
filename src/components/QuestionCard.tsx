@@ -20,6 +20,9 @@ interface QuestionCardProps {
   onToggleMastered: () => void;
   isBookmarked: boolean;
   onToggleBookmark: () => void;
+  onSelectCategory?: (category: string) => void;
+  onSelectDifficulty?: (difficulty: string) => void;
+  onSelectTag?: (tag: string) => void;
 }
 
 export const QuestionCard: React.FC<QuestionCardProps> = ({
@@ -30,6 +33,9 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   onToggleMastered,
   isBookmarked,
   onToggleBookmark,
+  onSelectCategory,
+  onSelectDifficulty,
+  onSelectTag,
 }) => {
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedFull, setCopiedFull] = useState(false);
@@ -66,16 +72,16 @@ ${question.proTip}
     setTimeout(() => setCopiedFull(false), 2000);
   };
 
-  const getDifficultyColor = (diff: string) => {
+  const getDifficultyBadge = (diff: string) => {
     switch (diff) {
       case 'Beginner':
-        return 'text-emerald-700 font-medium';
+        return 'bg-emerald-50 text-emerald-800 border-emerald-200/80 hover:bg-emerald-100';
       case 'Intermediate':
-        return 'text-amber-700 font-medium';
+        return 'bg-blue-50 text-blue-800 border-blue-200/80 hover:bg-blue-100';
       case 'Advanced':
-        return 'text-purple-700 font-medium';
+        return 'bg-purple-50 text-purple-800 border-purple-200/80 hover:bg-purple-100';
       default:
-        return 'text-slate-600';
+        return 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100';
     }
   };
 
@@ -92,18 +98,36 @@ ${question.proTip}
         onClick={onToggleExpand}
         className="p-4 sm:p-5 cursor-pointer select-none"
       >
-        {/* Unboxed Metadata Row with typographic separators */}
-        <div className="flex items-center justify-between gap-2 text-xs text-slate-500 mb-2">
+        {/* Metadata Row with clickable category & difficulty tags */}
+        <div className="flex items-center justify-between gap-2 text-xs text-slate-500 mb-2.5">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-mono font-semibold tabular-nums text-slate-800">
+            <span className="font-mono font-bold tabular-nums text-slate-900 bg-slate-100 px-2 py-0.5 rounded-md text-[11px]">
               Q{question.id.toString().padStart(2, '0')}
             </span>
-            <span aria-hidden="true">·</span>
-            <span>{question.category}</span>
-            <span aria-hidden="true">·</span>
-            <span className={getDifficultyColor(question.difficulty)}>
-              {question.difficulty}
-            </span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelectCategory?.(question.category);
+              }}
+              title={`Filter by category: ${question.category}`}
+              className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 transition-colors cursor-pointer text-left"
+            >
+              {question.category}
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelectDifficulty?.(question.difficulty);
+              }}
+              title={`Filter by level: ${question.difficulty}`}
+              className={`px-2 py-0.5 rounded-md text-[11px] font-semibold border transition-colors cursor-pointer flex items-center gap-1 ${getDifficultyBadge(question.difficulty)}`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${
+                question.difficulty === 'Beginner' ? 'bg-emerald-500' :
+                question.difficulty === 'Intermediate' ? 'bg-blue-500' : 'bg-purple-500'
+              }`} />
+              <span>{question.difficulty}</span>
+            </button>
           </div>
 
           {/* Action buttons (Bookmark, Mark as Mastered, Copy) */}
@@ -246,7 +270,16 @@ ${question.proTip}
             <span className="font-medium text-slate-500">Related topics:</span>
             {question.tags.map((tag, i) => (
               <React.Fragment key={tag}>
-                <span className="text-slate-600">{tag}</span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelectTag?.(tag);
+                  }}
+                  title={`Filter by tag: ${tag}`}
+                  className="text-slate-600 hover:text-emerald-700 hover:underline cursor-pointer"
+                >
+                  {tag}
+                </button>
                 {i < question.tags.length - 1 && <span aria-hidden="true">·</span>}
               </React.Fragment>
             ))}

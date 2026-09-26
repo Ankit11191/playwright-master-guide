@@ -108,6 +108,26 @@ export default function App() {
     return Array.from(set);
   }, []);
 
+  const difficultyCounts = useMemo(() => {
+    return {
+      All: PLAYWRIGHT_QUESTIONS.length,
+      Beginner: PLAYWRIGHT_QUESTIONS.filter((q) => q.difficulty === 'Beginner').length,
+      Intermediate: PLAYWRIGHT_QUESTIONS.filter((q) => q.difficulty === 'Intermediate').length,
+      Advanced: PLAYWRIGHT_QUESTIONS.filter((q) => q.difficulty === 'Advanced').length,
+    };
+  }, []);
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    PLAYWRIGHT_QUESTIONS.forEach((q) => {
+      // If a difficulty is selected, show count of that difficulty in each category
+      if (selectedDifficulty === 'All' || q.difficulty === selectedDifficulty) {
+        counts[q.category] = (counts[q.category] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [selectedDifficulty]);
+
   const hasActiveFilters = useMemo(() => {
     return (
       searchQuery.trim() !== '' ||
@@ -266,6 +286,10 @@ export default function App() {
               onToggleExpandAll={handleToggleExpandAll}
               onResetFilters={handleResetFilters}
               onOpenTopicDrawer={() => setIsTopicDrawerOpen(true)}
+              difficultyCounts={difficultyCounts}
+              categoryCounts={categoryCounts}
+              masteredCount={masteredIds.size}
+              bookmarkedCount={bookmarkedIds.size}
             />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
@@ -278,7 +302,7 @@ export default function App() {
                         Interview Readiness Progress
                       </span>
                       <span className="text-xs text-slate-500">
-                        ({masteredIds.size} of 50 Mastered)
+                        ({masteredIds.size} of {PLAYWRIGHT_QUESTIONS.length} Mastered)
                       </span>
                     </div>
                     <div className="w-full sm:w-80 bg-slate-100 h-2 rounded-full overflow-hidden mt-1.5">
@@ -317,7 +341,7 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Quick Jump Bar (1 - 50 Grid) */}
+              {/* Quick Jump Bar (1 - 160 Grid) */}
               <QuickJumpBar
                 onSelectQuestion={handleQuickJump}
                 masteredIds={masteredIds}
@@ -358,6 +382,8 @@ export default function App() {
                         onToggleMastered={() => handleToggleMastered(q.id)}
                         isBookmarked={bookmarkedIds.has(q.id)}
                         onToggleBookmark={() => handleToggleBookmark(q.id)}
+                        onSelectCategory={(cat) => setSelectedCategory(cat)}
+                        onSelectDifficulty={(diff) => setSelectedDifficulty(diff)}
                       />
                     </div>
                   ))}
@@ -435,6 +461,7 @@ export default function App() {
         onSelectQuestion={handleQuickJump}
         onResetFilters={handleResetFilters}
         hasActiveFilters={hasActiveFilters}
+        difficultyCounts={difficultyCounts}
       />
 
       {/* Export Modal */}
@@ -447,7 +474,7 @@ export default function App() {
       <footer className="bg-white border-t border-slate-200 py-6 px-4 sm:px-6 lg:px-8 mt-auto text-xs text-slate-500">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-slate-800">Playwright 50 Master Guide</span>
+            <span className="font-semibold text-slate-800">Playwright Master Guide (160 Q&A)</span>
             <span aria-hidden="true">·</span>
             <span>Offline Ready</span>
           </div>

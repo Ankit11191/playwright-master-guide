@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { PLAYWRIGHT_QUESTIONS } from '../data/playwrightQuestions';
-import { X, Copy, Check, Download, Printer, FileText } from 'lucide-react';
+import { PLAYWRIGHT_CHEAT_SHEET_SECTIONS } from '../data/playwrightCheatSheet';
+import { X, Copy, Check, Download, Printer, FileText, Zap } from 'lucide-react';
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -8,13 +9,14 @@ interface ExportModalProps {
 }
 
 export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => {
+  const [activeExportTab, setActiveExportTab] = useState<'qa' | 'cheatsheet'>('qa');
   const [copiedMd, setCopiedMd] = useState(false);
 
   if (!isOpen) return null;
 
-  const generateMarkdown = () => {
-    let md = `# Top 50 Playwright Interview Questions & Comprehensive Guide\n\n`;
-    md += `*Generated from Playwright 50 Master Guide*\n\n---\n\n`;
+  const generateQAMarkdown = () => {
+    let md = `# Top ${PLAYWRIGHT_QUESTIONS.length} Playwright Interview Questions & Comprehensive Guide\n\n`;
+    md += `*Generated from Playwright Master Guide (160 Q&A)*\n\n---\n\n`;
 
     PLAYWRIGHT_QUESTIONS.forEach((q) => {
       md += `### ${q.id}. ${q.question}\n`;
@@ -31,27 +33,64 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
     return md;
   };
 
+  const generateCheatSheetMarkdown = () => {
+    let md = `# Playwright Complete API Reference & Cheat Sheet\n\n`;
+    md += `*Comprehensive Syntax Guide with Locators, Actions, Assertions, Network Mocking & CLI*\n\n---\n\n`;
+
+    PLAYWRIGHT_CHEAT_SHEET_SECTIONS.forEach((section) => {
+      md += `## ${section.title}\n`;
+      md += `*${section.description}*\n\n`;
+
+      section.items.forEach((item) => {
+        md += `### ${item.name}\n`;
+        md += `\`${item.syntax}\`\n\n`;
+        md += `${item.description}\n\n`;
+        if (item.tags.length > 0) {
+          md += `**Tags:** ${item.tags.map((t) => `\`#${t}\``).join(' ')}\n\n`;
+        }
+        if (item.exampleCode) {
+          md += `\`\`\`typescript\n${item.exampleCode}\n\`\`\`\n\n`;
+        }
+        if (item.proTip) {
+          md += `> **Pro-Tip:** ${item.proTip}\n\n`;
+        }
+      });
+      md += `---\n\n`;
+    });
+
+    return md;
+  };
+
   const handleCopyMarkdown = () => {
-    navigator.clipboard.writeText(generateMarkdown());
+    const content = activeExportTab === 'qa' ? generateQAMarkdown() : generateCheatSheetMarkdown();
+    navigator.clipboard.writeText(content);
     setCopiedMd(true);
     setTimeout(() => setCopiedMd(false), 2000);
   };
 
   const handleDownloadMarkdown = () => {
+    const isQA = activeExportTab === 'qa';
+    const content = isQA ? generateQAMarkdown() : generateCheatSheetMarkdown();
+    const filename = isQA ? `playwright-${PLAYWRIGHT_QUESTIONS.length}-questions-guide.md` : 'playwright-cheat-sheet-reference.md';
+
     const element = document.createElement('a');
-    const file = new Blob([generateMarkdown()], { type: 'text/markdown' });
+    const file = new Blob([content], { type: 'text/markdown' });
     element.href = URL.createObjectURL(file);
-    element.download = 'playwright-50-questions-guide.md';
+    element.download = filename;
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
   };
 
   const handleDownloadJSON = () => {
+    const isQA = activeExportTab === 'qa';
+    const data = isQA ? PLAYWRIGHT_QUESTIONS : PLAYWRIGHT_CHEAT_SHEET_SECTIONS;
+    const filename = isQA ? `playwright-${PLAYWRIGHT_QUESTIONS.length}-questions.json` : 'playwright-cheat-sheet.json';
+
     const element = document.createElement('a');
-    const file = new Blob([JSON.stringify(PLAYWRIGHT_QUESTIONS, null, 2)], { type: 'application/json' });
+    const file = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     element.href = URL.createObjectURL(file);
-    element.download = 'playwright-50-questions.json';
+    element.download = filename;
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
@@ -71,7 +110,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
           <div className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-emerald-600" />
             <h3 className="text-base font-bold text-slate-900">
-              Export 50 Playwright Questions
+              Export Playwright Guides
             </h3>
           </div>
           <button
@@ -82,8 +121,35 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
           </button>
         </div>
 
+        {/* Tab switch between Q&A and Cheat Sheet */}
+        <div className="flex rounded-lg bg-slate-100 p-1 text-xs font-semibold">
+          <button
+            onClick={() => setActiveExportTab('qa')}
+            className={`flex-1 py-1.5 rounded-md transition-colors ${
+              activeExportTab === 'qa'
+                ? 'bg-white text-slate-900 shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            {PLAYWRIGHT_QUESTIONS.length} Interview Q&A
+          </button>
+          <button
+            onClick={() => setActiveExportTab('cheatsheet')}
+            className={`flex-1 py-1.5 rounded-md transition-colors flex items-center justify-center gap-1.5 ${
+              activeExportTab === 'cheatsheet'
+                ? 'bg-white text-emerald-800 shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Zap className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Complete Cheat Sheet</span>
+          </button>
+        </div>
+
         <p className="text-xs text-slate-600 leading-relaxed">
-          Export the complete reference handbook containing all 50 questions, detailed technical answers, code snippets, and interview pro tips for offline reading or company study guides.
+          {activeExportTab === 'qa'
+            ? `Export the complete reference handbook containing all ${PLAYWRIGHT_QUESTIONS.length} questions, detailed technical answers, code snippets, and interview pro tips.`
+            : 'Export the complete 10-category Playwright Cheat Sheet covering 90+ API methods, CLI commands, locators, actions, and network mocking snippets.'}
         </p>
 
         <div className="space-y-2.5">
@@ -97,7 +163,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
               </div>
               <div>
                 <div className="text-xs font-semibold text-slate-900">
-                  {copiedMd ? 'Copied to Clipboard!' : 'Copy All 50 Q&A as Markdown'}
+                  {copiedMd ? 'Copied to Clipboard!' : `Copy All ${activeExportTab === 'qa' ? `${PLAYWRIGHT_QUESTIONS.length} Q&A` : 'Cheat Sheet'} as Markdown`}
                 </div>
                 <div className="text-[11px] text-slate-500">
                   Paste directly into Notion, Obsidian, GitHub or Slack
@@ -119,7 +185,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
                   Download Markdown Document (.md)
                 </div>
                 <div className="text-[11px] text-slate-500">
-                  Full standalone guide formatted in Markdown
+                  Full standalone guide formatted in clean Markdown
                 </div>
               </div>
             </div>
@@ -138,7 +204,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
                   Download Structured JSON Data (.json)
                 </div>
                 <div className="text-[11px] text-slate-500">
-                  Raw data schema with tags, code snippets, and levels
+                  Raw data schema with syntax, code snippets, and tags
                 </div>
               </div>
             </div>
