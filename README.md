@@ -1,20 +1,44 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# Playwright 50 Master Guide
 
-# Run and deploy your AI Studio app
+A browser-based learning app for Playwright interview preparation, built as a static React + Vite web application.
 
-This contains everything you need to run your app locally.
+## Features
 
-View your app in AI Studio: https://ai.studio/apps/9f48c276-342e-45a4-899f-88059bb4a64d
+- 50 Playwright interview questions and answers
+- Category and difficulty filters
+- Mastered/bookmarked tracking in local storage
+- Flashcards, quiz mode, and architecture study views
+- Offline-ready PWA support
+- Static build suitable for GitHub Pages, Netlify, Vercel, or any standard web host
 
-## Run Locally
-
-**Prerequisites:**  Node.js
-
+## Local development
 
 1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+   npm install
+2. Start the app:
+   npm run dev
+3. Open the local URL shown in the terminal, usually http://localhost:3000
+
+## Production build
+
+npm run build
+
+The generated static files are placed in the dist folder and can be deployed to:
+
+- GitHub Pages
+- Netlify
+- Vercel
+- Any static web server
+
+## Deploy to GitHub Pages
+
+1. Ensure the project is pushed to a GitHub repository.
+2. Run the deploy command:
+   npm run deploy:gh-pages
+3. In GitHub, enable Pages from the gh-pages branch or use the Pages action output for your repository.
+
+## Notes
+
+- The app is fully client-side and does not require a backend server.
+- The app uses browser localStorage for progress persistence.
+- The Vite config uses relative asset paths so it works cleanly on GitHub Pages.

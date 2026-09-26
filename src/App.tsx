@@ -1,29 +1,24 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { PLAYWRIGHT_QUESTIONS, PlaywrightQuestion } from './data/playwrightQuestions';
-import { Header } from './components/Header';
-import { FilterBar } from './components/FilterBar';
-import { QuestionCard } from './components/QuestionCard';
-import { StudyFlashcards } from './components/StudyFlashcards';
-import { InteractiveQuiz } from './components/InteractiveQuiz';
-import { ArchitectureVisualizer } from './components/ArchitectureVisualizer';
-import { CheatSheetView } from './components/CheatSheetView';
-import { QuickJumpBar } from './components/QuickJumpBar';
-import { ExportModal } from './components/ExportModal';
-import { AndroidInstallModal } from './components/AndroidInstallModal';
+import {
+    ArrowUp,
+    BookOpen,
+    ExternalLink,
+    HelpCircle,
+    Layers,
+    Sparkles
+} from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AndroidBottomNav } from './components/AndroidBottomNav';
 import { AndroidTopicDrawer } from './components/AndroidTopicDrawer';
-import { usePWAInstall } from './hooks/usePWAInstall';
-import { 
-  Sparkles, 
-  HelpCircle, 
-  Layers, 
-  ArrowUp, 
-  CheckCircle2, 
-  ExternalLink,
-  BookOpen,
-  Smartphone,
-  Filter
-} from 'lucide-react';
+import { ArchitectureVisualizer } from './components/ArchitectureVisualizer';
+import { CheatSheetView } from './components/CheatSheetView';
+import { ExportModal } from './components/ExportModal';
+import { FilterBar } from './components/FilterBar';
+import { Header } from './components/Header';
+import { InteractiveQuiz } from './components/InteractiveQuiz';
+import { QuestionCard } from './components/QuestionCard';
+import { QuickJumpBar } from './components/QuickJumpBar';
+import { StudyFlashcards } from './components/StudyFlashcards';
+import { PLAYWRIGHT_QUESTIONS } from './data/playwrightQuestions';
 
 export default function App() {
   // Navigation
@@ -59,11 +54,23 @@ export default function App() {
 
   // Modals & Drawers
   const [isExportOpen, setIsExportOpen] = useState(false);
-  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
   const [isTopicDrawerOpen, setIsTopicDrawerOpen] = useState(false);
 
-  // Android PWA Hook
-  const { isInstallable, isInstalled, isOnline, install } = usePWAInstall();
+  // Connection status
+  const [isOnline, setIsOnline] = useState<boolean>(() => typeof navigator !== 'undefined' ? navigator.onLine : true);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Scroll to top button visibility
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -235,9 +242,6 @@ export default function App() {
         masteredCount={masteredIds.size}
         bookmarkedCount={bookmarkedIds.size}
         onOpenExport={() => setIsExportOpen(true)}
-        onOpenInstallModal={() => setIsInstallModalOpen(true)}
-        isInstallable={isInstallable}
-        isInstalled={isInstalled}
         isOnline={isOnline}
       />
 
@@ -265,41 +269,6 @@ export default function App() {
             />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-              {/* Android App Install Banner (if not installed yet) */}
-              {!isInstalled && (
-                <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 text-white rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm border border-slate-700/50">
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                      <Smartphone className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-white">
-                        Use as an Android Application
-                      </h3>
-                      <p className="text-xs text-slate-300">
-                        Install on any Android OS device for instant 1-tap launch and 100% offline access.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
-                    <button
-                      onClick={() => setIsInstallModalOpen(true)}
-                      className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-xs transition-colors"
-                    >
-                      Install to Android
-                    </button>
-                    <button
-                      onClick={() => setIsTopicDrawerOpen(true)}
-                      className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white text-xs rounded-xl transition-colors font-medium sm:hidden flex items-center gap-1"
-                    >
-                      <Filter className="w-3.5 h-3.5" />
-                      <span>Topics</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-
               {/* Progress & Quick Stats Card */}
               <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -468,15 +437,6 @@ export default function App() {
         hasActiveFilters={hasActiveFilters}
       />
 
-      {/* Android Install Modal */}
-      <AndroidInstallModal
-        isOpen={isInstallModalOpen}
-        onClose={() => setIsInstallModalOpen(false)}
-        onInstall={install}
-        isInstallable={isInstallable}
-        isInstalled={isInstalled}
-      />
-
       {/* Export Modal */}
       <ExportModal
         isOpen={isExportOpen}
@@ -489,16 +449,10 @@ export default function App() {
           <div className="flex items-center gap-2">
             <span className="font-semibold text-slate-800">Playwright 50 Master Guide</span>
             <span aria-hidden="true">·</span>
-            <span>Android PWA Ready & Offline Capable</span>
+            <span>Offline Ready</span>
           </div>
 
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => setIsInstallModalOpen(true)}
-              className="text-emerald-700 hover:text-emerald-800 font-semibold"
-            >
-              Install on Android
-            </button>
             <a
               href="https://playwright.dev"
               target="_blank"

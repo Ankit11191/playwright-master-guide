@@ -1,16 +1,15 @@
-import React from 'react';
-import { 
-  Bookmark, 
-  Download, 
-  Sparkles, 
-  BookOpen, 
-  Layers, 
-  HelpCircle, 
-  FileText, 
-  CheckCircle2,
-  Smartphone,
-  WifiOff
+import {
+    Bookmark,
+    BookOpen,
+    CheckCircle2,
+    Download,
+    FileText,
+    HelpCircle,
+    Layers,
+    Sparkles,
+    WifiOff
 } from 'lucide-react';
+import React from 'react';
 
 interface HeaderProps {
   activeTab: 'questions' | 'flashcards' | 'quiz' | 'architecture' | 'cheatsheet';
@@ -18,9 +17,6 @@ interface HeaderProps {
   masteredCount: number;
   bookmarkedCount: number;
   onOpenExport: () => void;
-  onOpenInstallModal: () => void;
-  isInstallable: boolean;
-  isInstalled: boolean;
   isOnline: boolean;
 }
 
@@ -30,9 +26,6 @@ export const Header: React.FC<HeaderProps> = ({
   masteredCount,
   bookmarkedCount,
   onOpenExport,
-  onOpenInstallModal,
-  isInstallable,
-  isInstalled,
   isOnline,
 }) => {
   return (
@@ -41,7 +34,7 @@ export const Header: React.FC<HeaderProps> = ({
       {!isOnline && (
         <div className="bg-amber-600 text-white text-[11px] font-semibold py-1 px-4 text-center flex items-center justify-center gap-1.5 shadow-inner">
           <WifiOff className="w-3.5 h-3.5" />
-          <span>Offline Mode Active — All 50 Questions & Code Cached for Offline Android Reading</span>
+          <span>Offline Mode Active — All 50 Questions & Code Cached for Offline Reading</span>
         </div>
       )}
 
@@ -59,9 +52,6 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="flex items-center gap-2">
                 <span className="text-base font-bold tracking-tight text-slate-900 group-hover:text-emerald-700 transition-colors">
                   Playwright 50
-                </span>
-                <span className="hidden sm:inline-block text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
-                  Android App Ready
                 </span>
               </div>
             </button>
@@ -153,20 +143,6 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="font-mono tabular-nums font-semibold text-slate-900">{bookmarkedCount}</span>
               </span>
             </div>
-
-            {/* Android Install Button */}
-            <button
-              onClick={onOpenInstallModal}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all shadow-xs ${
-                isInstalled
-                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                  : 'bg-emerald-600 hover:bg-emerald-700 text-white animate-pulse-subtle'
-              }`}
-              title="Install Android app"
-            >
-              <Smartphone className="w-3.5 h-3.5" />
-              <span>{isInstalled ? 'Android App' : 'Install App'}</span>
-            </button>
 
             <button
               onClick={onOpenExport}
