@@ -7,13 +7,14 @@ import {
     HelpCircle,
     Layers,
     Sparkles,
+    Terminal,
     WifiOff
 } from 'lucide-react';
 import React from 'react';
 
 interface HeaderProps {
-  activeTab: 'questions' | 'flashcards' | 'quiz' | 'architecture' | 'cheatsheet';
-  setActiveTab: (tab: 'questions' | 'flashcards' | 'quiz' | 'architecture' | 'cheatsheet') => void;
+  activeTab: 'questions' | 'flashcards' | 'quiz' | 'architecture' | 'cheatsheet' | 'console';
+  setActiveTab: (tab: 'questions' | 'flashcards' | 'quiz' | 'architecture' | 'cheatsheet' | 'console') => void;
   masteredCount: number;
   bookmarkedCount: number;
   onOpenExport: () => void;
@@ -129,6 +130,23 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="flex items-center gap-1.5">
                 <FileText className="w-4 h-4 text-slate-600" />
                 Cheat Sheet
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('console')}
+              className={`px-3 py-1.5 rounded-md transition-colors whitespace-nowrap ${
+                activeTab === 'console'
+                  ? 'bg-amber-100 text-amber-950 font-bold border border-amber-300 shadow-xs'
+                  : 'hover:text-slate-900 hover:bg-amber-50/70 text-slate-700'
+              }`}
+            >
+              <span className="flex items-center gap-1.5">
+                <Terminal className="w-4 h-4 text-amber-600" />
+                <span>Java Console</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded font-bold bg-amber-200 text-amber-900">
+                  NEW
+                </span>
               </span>
             </button>
           </nav>

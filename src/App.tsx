@@ -1,10 +1,12 @@
 import {
     ArrowUp,
     BookOpen,
+    Coffee,
     ExternalLink,
     HelpCircle,
     Layers,
-    Sparkles
+    Sparkles,
+    Terminal
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AndroidBottomNav } from './components/AndroidBottomNav';
@@ -15,6 +17,7 @@ import { ExportModal } from './components/ExportModal';
 import { FilterBar } from './components/FilterBar';
 import { Header } from './components/Header';
 import { InteractiveQuiz } from './components/InteractiveQuiz';
+import { JavaCompilerConsole } from './components/JavaCompilerConsole';
 import { QuestionCard } from './components/QuestionCard';
 import { QuickJumpBar } from './components/QuickJumpBar';
 import { StudyFlashcards } from './components/StudyFlashcards';
@@ -22,7 +25,7 @@ import { PLAYWRIGHT_QUESTIONS } from './data/playwrightQuestions';
 
 export default function App() {
   // Navigation
-  const [activeTab, setActiveTab] = useState<'questions' | 'flashcards' | 'quiz' | 'architecture' | 'cheatsheet'>('questions');
+  const [activeTab, setActiveTab] = useState<'questions' | 'flashcards' | 'quiz' | 'architecture' | 'cheatsheet' | 'console'>('questions');
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -337,6 +340,16 @@ export default function App() {
                       <Layers className="w-3.5 h-3.5 text-purple-600" />
                       <span>Architecture Lab</span>
                     </button>
+                    <button
+                      onClick={() => setActiveTab('console')}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:from-amber-600 hover:to-amber-700 transition-all font-semibold shadow-xs hover:shadow-sm"
+                    >
+                      <Terminal className="w-3.5 h-3.5" />
+                      <span>Java Console</span>
+                      <span className="text-[10px] bg-amber-950/30 px-1 py-0.2 rounded font-mono">
+                        RUN
+                      </span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -420,6 +433,12 @@ export default function App() {
         {activeTab === 'cheatsheet' && (
           <div className="pb-12">
             <CheatSheetView />
+          </div>
+        )}
+
+        {activeTab === 'console' && (
+          <div className="pb-12">
+            <JavaCompilerConsole />
           </div>
         )}
       </main>

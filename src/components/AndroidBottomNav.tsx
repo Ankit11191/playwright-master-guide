@@ -1,9 +1,9 @@
 import React from 'react';
-import { BookOpen, Filter, Sparkles, HelpCircle, FileText } from 'lucide-react';
+import { BookOpen, Filter, Sparkles, HelpCircle, FileText, Terminal } from 'lucide-react';
 
 interface AndroidBottomNavProps {
-  activeTab: 'questions' | 'flashcards' | 'quiz' | 'architecture' | 'cheatsheet';
-  setActiveTab: (tab: 'questions' | 'flashcards' | 'quiz' | 'architecture' | 'cheatsheet') => void;
+  activeTab: 'questions' | 'flashcards' | 'quiz' | 'architecture' | 'cheatsheet' | 'console';
+  setActiveTab: (tab: 'questions' | 'flashcards' | 'quiz' | 'architecture' | 'cheatsheet' | 'console') => void;
   onOpenTopicPicker: () => void;
   hasActiveFilters: boolean;
 }
@@ -16,7 +16,7 @@ export const AndroidBottomNav: React.FC<AndroidBottomNavProps> = ({
 }) => {
   return (
     <nav className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 md:hidden pb-safe">
-      <div className="flex items-center justify-around h-15 px-2">
+      <div className="flex items-center justify-around h-15 px-1">
         {/* Tab 1: Questions */}
         <button
           onClick={() => setActiveTab('questions')}
@@ -27,7 +27,7 @@ export const AndroidBottomNav: React.FC<AndroidBottomNavProps> = ({
           }`}
         >
           <BookOpen className="w-4 h-4 mb-0.5" />
-          <span className="text-[10px] tracking-tight">160 Q&A</span>
+          <span className="text-[9.5px] tracking-tight">160 Q&A</span>
         </button>
 
         {/* Tab 2: Topics & Filter Drawer */}
@@ -36,9 +36,9 @@ export const AndroidBottomNav: React.FC<AndroidBottomNavProps> = ({
           className="flex-1 flex flex-col items-center justify-center py-1 text-slate-500 hover:text-slate-800 transition-colors min-h-[44px] relative"
         >
           <Filter className="w-4 h-4 mb-0.5" />
-          <span className="text-[10px] tracking-tight">Topics</span>
+          <span className="text-[9.5px] tracking-tight">Topics</span>
           {hasActiveFilters && (
-            <span className="absolute top-1.5 right-6 w-2 h-2 rounded-full bg-emerald-600 ring-2 ring-white" />
+            <span className="absolute top-1.5 right-4 w-2 h-2 rounded-full bg-emerald-600 ring-2 ring-white" />
           )}
         </button>
 
@@ -52,10 +52,23 @@ export const AndroidBottomNav: React.FC<AndroidBottomNavProps> = ({
           }`}
         >
           <Sparkles className="w-4 h-4 mb-0.5" />
-          <span className="text-[10px] tracking-tight">Cards</span>
+          <span className="text-[9.5px] tracking-tight">Cards</span>
         </button>
 
-        {/* Tab 4: Quiz */}
+        {/* Tab 4: Java Console */}
+        <button
+          onClick={() => setActiveTab('console')}
+          className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors min-h-[44px] ${
+            activeTab === 'console'
+              ? 'text-amber-700 font-bold'
+              : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <Terminal className="w-4 h-4 mb-0.5 text-amber-600" />
+          <span className="text-[9.5px] tracking-tight font-semibold">Java IDE</span>
+        </button>
+
+        {/* Tab 5: Quiz */}
         <button
           onClick={() => setActiveTab('quiz')}
           className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors min-h-[44px] ${
@@ -65,10 +78,10 @@ export const AndroidBottomNav: React.FC<AndroidBottomNavProps> = ({
           }`}
         >
           <HelpCircle className="w-4 h-4 mb-0.5" />
-          <span className="text-[10px] tracking-tight">Quiz</span>
+          <span className="text-[9.5px] tracking-tight">Quiz</span>
         </button>
 
-        {/* Tab 5: Cheatsheet */}
+        {/* Tab 6: Cheatsheet */}
         <button
           onClick={() => setActiveTab('cheatsheet')}
           className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors min-h-[44px] ${
@@ -78,7 +91,7 @@ export const AndroidBottomNav: React.FC<AndroidBottomNavProps> = ({
           }`}
         >
           <FileText className="w-4 h-4 mb-0.5" />
-          <span className="text-[10px] tracking-tight">Cheatsheet</span>
+          <span className="text-[9.5px] tracking-tight">Cheatsheet</span>
         </button>
       </div>
     </nav>
