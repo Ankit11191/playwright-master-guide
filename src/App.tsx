@@ -3,8 +3,10 @@ import {
     BookOpen,
     Coffee,
     ExternalLink,
+    Github,
     HelpCircle,
     Layers,
+    Linkedin,
     Sparkles,
     Terminal
 } from 'lucide-react';
@@ -489,34 +491,65 @@ export default function App() {
         onClose={() => setIsExportOpen(false)}
       />
 
-      {/* Footer */}
-      <footer className="bg-white border-t border-slate-200 py-6 px-4 sm:px-6 lg:px-8 mt-auto text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+      {/* Footer - Always positioned at the bottom across all pages & navigation */}
+      <footer className="bg-white border-t border-slate-200 py-6 px-4 sm:px-6 lg:px-8 mt-auto text-xs text-slate-500 pb-20 md:pb-6">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-center gap-2 text-center sm:text-left">
             <span className="font-semibold text-slate-800">Playwright Master Guide (160 Q&A)</span>
-            <span aria-hidden="true">·</span>
-            <span>Offline Ready</span>
+            <span className="hidden sm:inline" aria-hidden="true">·</span>
+            <span className="text-slate-600">Created by <strong className="text-slate-900 font-medium">Ankit Mittal</strong></span>
           </div>
 
-          <div className="flex items-center gap-4">
+          {/* Social Profiles & Developer Links */}
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {/* LinkedIn Link */}
             <a
-              href="https://playwright.dev"
+              href="https://www.linkedin.com/in/ankitmittal061091/"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 hover:text-slate-900 transition-colors"
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-[#0A66C2]/10 border border-slate-200 hover:border-[#0A66C2]/40 text-slate-700 hover:text-[#0A66C2] font-medium transition-all group shadow-2xs hover:shadow-xs"
+              title="Connect with Ankit Mittal on LinkedIn"
             >
-              <span>Playwright Docs</span>
-              <ExternalLink className="w-3 h-3" />
+              <Linkedin className="w-4 h-4 text-[#0A66C2] group-hover:scale-110 transition-transform" />
+              <span>LinkedIn</span>
+              <ExternalLink className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity" />
             </a>
+
+            {/* GitHub Link */}
             <a
-              href="https://trace.playwright.dev"
+              href="https://github.com/Ankit11191"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 hover:text-slate-900 transition-colors"
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-900/10 border border-slate-200 hover:border-slate-800/40 text-slate-700 hover:text-slate-900 font-medium transition-all group shadow-2xs hover:shadow-xs"
+              title="View Ankit Mittal on GitHub"
             >
-              <span>Trace Viewer</span>
-              <ExternalLink className="w-3 h-3" />
+              <Github className="w-4 h-4 text-slate-900 group-hover:scale-110 transition-transform" />
+              <span>GitHub</span>
+              <ExternalLink className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity" />
             </a>
+
+            <div className="h-4 w-px bg-slate-200 hidden sm:block mx-1" aria-hidden="true" />
+
+            <div className="flex items-center gap-3">
+              <a
+                href="https://playwright.dev"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 hover:text-slate-900 transition-colors"
+              >
+                <span>Playwright Docs</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+              <a
+                href="https://trace.playwright.dev"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 hover:text-slate-900 transition-colors"
+              >
+                <span>Trace Viewer</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
           </div>
         </div>
       </footer>
