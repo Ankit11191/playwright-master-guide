@@ -1,97 +1,93 @@
 import React from 'react';
-import { BookOpen, Filter, Sparkles, HelpCircle, FileText, Terminal } from 'lucide-react';
+import { Sparkles, BookOpen, Code2, Bug, Briefcase, Menu } from 'lucide-react';
+import { AcademyTab } from './Header';
 
 interface AndroidBottomNavProps {
-  activeTab: 'questions' | 'flashcards' | 'quiz' | 'architecture' | 'cheatsheet' | 'console';
-  setActiveTab: (tab: 'questions' | 'flashcards' | 'quiz' | 'architecture' | 'cheatsheet' | 'console') => void;
-  onOpenTopicPicker: () => void;
-  hasActiveFilters: boolean;
+  activeTab: AcademyTab;
+  setActiveTab: (tab: AcademyTab) => void;
+  onOpenMobileMenu: () => void;
 }
 
 export const AndroidBottomNav: React.FC<AndroidBottomNavProps> = ({
   activeTab,
   setActiveTab,
-  onOpenTopicPicker,
-  hasActiveFilters,
+  onOpenMobileMenu,
 }) => {
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 md:hidden pb-safe">
-      <div className="flex items-center justify-around h-15 px-1">
-        {/* Tab 1: Questions */}
+    <nav className="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 md:hidden pb-safe">
+      <div className="flex items-center justify-around h-14 px-1">
+        {/* Tab 1: Dashboard */}
         <button
-          onClick={() => setActiveTab('questions')}
-          className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors min-h-[44px] ${
-            activeTab === 'questions'
-              ? 'text-emerald-700 font-semibold'
-              : 'text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          <BookOpen className="w-4 h-4 mb-0.5" />
-          <span className="text-[9.5px] tracking-tight">160 Q&A</span>
-        </button>
-
-        {/* Tab 2: Topics & Filter Drawer */}
-        <button
-          onClick={onOpenTopicPicker}
-          className="flex-1 flex flex-col items-center justify-center py-1 text-slate-500 hover:text-slate-800 transition-colors min-h-[44px] relative"
-        >
-          <Filter className="w-4 h-4 mb-0.5" />
-          <span className="text-[9.5px] tracking-tight">Topics</span>
-          {hasActiveFilters && (
-            <span className="absolute top-1.5 right-4 w-2 h-2 rounded-full bg-emerald-600 ring-2 ring-white" />
-          )}
-        </button>
-
-        {/* Tab 3: Study Cards */}
-        <button
-          onClick={() => setActiveTab('flashcards')}
-          className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors min-h-[44px] ${
-            activeTab === 'flashcards'
-              ? 'text-amber-700 font-semibold'
-              : 'text-slate-500 hover:text-slate-800'
+          onClick={() => setActiveTab('dashboard')}
+          className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors min-h-[44px] cursor-pointer ${
+            activeTab === 'dashboard'
+              ? 'text-indigo-600 dark:text-indigo-400 font-bold'
+              : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
           }`}
         >
           <Sparkles className="w-4 h-4 mb-0.5" />
-          <span className="text-[9.5px] tracking-tight">Cards</span>
+          <span className="text-[10px] tracking-tight">Home</span>
         </button>
 
-        {/* Tab 4: Java Console */}
+        {/* Tab 2: Modules */}
         <button
-          onClick={() => setActiveTab('console')}
-          className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors min-h-[44px] ${
-            activeTab === 'console'
-              ? 'text-amber-700 font-bold'
-              : 'text-slate-500 hover:text-slate-800'
+          onClick={() => setActiveTab('modules')}
+          className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors min-h-[44px] cursor-pointer ${
+            activeTab === 'modules'
+              ? 'text-indigo-600 dark:text-indigo-400 font-bold'
+              : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
           }`}
         >
-          <Terminal className="w-4 h-4 mb-0.5 text-amber-600" />
-          <span className="text-[9.5px] tracking-tight font-semibold">Java IDE</span>
+          <BookOpen className="w-4 h-4 mb-0.5" />
+          <span className="text-[10px] tracking-tight">Modules</span>
         </button>
 
-        {/* Tab 5: Quiz */}
+        {/* Tab 3: Code Lab */}
         <button
-          onClick={() => setActiveTab('quiz')}
-          className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors min-h-[44px] ${
-            activeTab === 'quiz'
-              ? 'text-blue-700 font-semibold'
-              : 'text-slate-500 hover:text-slate-800'
+          onClick={() => setActiveTab('code-practice')}
+          className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors min-h-[44px] cursor-pointer ${
+            activeTab === 'code-practice'
+              ? 'text-cyan-600 dark:text-cyan-400 font-bold'
+              : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
           }`}
         >
-          <HelpCircle className="w-4 h-4 mb-0.5" />
-          <span className="text-[9.5px] tracking-tight">Quiz</span>
+          <Code2 className="w-4 h-4 mb-0.5" />
+          <span className="text-[10px] tracking-tight">Code Lab</span>
         </button>
 
-        {/* Tab 6: Cheatsheet */}
+        {/* Tab 4: Debugging */}
         <button
-          onClick={() => setActiveTab('cheatsheet')}
-          className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors min-h-[44px] ${
-            activeTab === 'cheatsheet'
-              ? 'text-slate-900 font-semibold'
-              : 'text-slate-500 hover:text-slate-800'
+          onClick={() => setActiveTab('debugging-lab')}
+          className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors min-h-[44px] cursor-pointer ${
+            activeTab === 'debugging-lab'
+              ? 'text-amber-600 dark:text-amber-400 font-bold'
+              : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
           }`}
         >
-          <FileText className="w-4 h-4 mb-0.5" />
-          <span className="text-[9.5px] tracking-tight">Cheatsheet</span>
+          <Bug className="w-4 h-4 mb-0.5" />
+          <span className="text-[10px] tracking-tight">Debug</span>
+        </button>
+
+        {/* Tab 5: Interview */}
+        <button
+          onClick={() => setActiveTab('interview-engine')}
+          className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors min-h-[44px] cursor-pointer ${
+            activeTab === 'interview-engine'
+              ? 'text-emerald-600 dark:text-emerald-400 font-bold'
+              : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
+          }`}
+        >
+          <Briefcase className="w-4 h-4 mb-0.5" />
+          <span className="text-[10px] tracking-tight">Interview</span>
+        </button>
+
+        {/* Tab 6: More Menu */}
+        <button
+          onClick={onOpenMobileMenu}
+          className="flex-1 flex flex-col items-center justify-center py-1 text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors min-h-[44px] cursor-pointer"
+        >
+          <Menu className="w-4 h-4 mb-0.5" />
+          <span className="text-[10px] tracking-tight">More</span>
         </button>
       </div>
     </nav>
