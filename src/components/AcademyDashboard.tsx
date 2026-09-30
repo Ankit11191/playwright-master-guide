@@ -14,9 +14,13 @@ import {
   ArrowRight,
   TrendingUp,
   Sparkles,
-  Zap
+  Zap,
+  Globe,
+  Settings,
+  Star
 } from 'lucide-react';
 import { ACADEMY_MODULES } from '../data/academyModules';
+import { SupportedLanguage, SUPPORTED_LANGUAGES } from '../data/languages';
 
 interface AcademyDashboardProps {
   progress: {
@@ -28,15 +32,20 @@ interface AcademyDashboardProps {
     xp: number;
     streakDays: number;
   };
+  selectedLanguage: SupportedLanguage;
+  onOpenLanguageModal: () => void;
   onNavigateTab: (tab: string) => void;
   onOpenCertificate: () => void;
 }
 
 export const AcademyDashboard: React.FC<AcademyDashboardProps> = ({
   progress,
+  selectedLanguage,
+  onOpenLanguageModal,
   onNavigateTab,
   onOpenCertificate
 }) => {
+  const currentLang = SUPPORTED_LANGUAGES[selectedLanguage] || SUPPORTED_LANGUAGES.java;
   // Calculate total items
   const totalLessons = ACADEMY_MODULES.reduce((acc, m) => acc + m.lessons.length, 0);
   const totalExercises = 6;
@@ -64,9 +73,17 @@ export const AcademyDashboard: React.FC<AcademyDashboardProps> = ({
   const level = getLevelInfo(progress.xp);
 
   // Skill matrix tracking
+  const languageSkillName = selectedLanguage === 'java' 
+    ? 'Java & OOP Models' 
+    : selectedLanguage === 'python' 
+    ? 'Python & Pytest' 
+    : selectedLanguage === 'javascript' 
+    ? 'JavaScript & Node' 
+    : 'TypeScript & Types';
+
   const skills = [
     { name: 'Playwright Core', level: Math.min(100, 30 + completedLessonsCount * 12), category: 'Framework' },
-    { name: 'TypeScript & Node', level: Math.min(100, 40 + completedExercisesCount * 15), category: 'Language' },
+    { name: languageSkillName, level: Math.min(100, 40 + completedExercisesCount * 15), category: 'Language' },
     { name: 'Web-First Locators', level: Math.min(100, 50 + completedDebugCount * 18), category: 'Automation' },
     { name: 'Custom Fixtures & DI', level: Math.min(100, 25 + (progress.completedProjects.includes('proj-01') ? 35 : 10)), category: 'Architecture' },
     { name: 'API Hybrid Testing', level: Math.min(100, 20 + (progress.completedExercises.includes('ex-05') ? 40 : 15)), category: 'Integration' },
@@ -130,6 +147,45 @@ export const AcademyDashboard: React.FC<AcademyDashboardProps> = ({
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Active Language Track Banner */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-indigo-500/10 to-transparent border border-amber-500/20 dark:border-indigo-500/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-start sm:items-center gap-3.5">
+          <div className="w-12 h-12 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-2xl shadow-sm shrink-0">
+            {currentLang.icon}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                Active Learning Track
+              </span>
+              {selectedLanguage === 'java' && (
+                <span className="px-2 py-0.2 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1">
+                  <Star className="w-2.5 h-2.5 fill-current" />
+                  Default Course Preference
+                </span>
+              )}
+            </div>
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 mt-0.5">
+              <span>Playwright with {currentLang.name}</span>
+              <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
+                ({currentLang.frameworkRunner})
+              </span>
+            </h2>
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+              {currentLang.description} Build Tool: <strong>{currentLang.buildTool}</strong> · Assertions: <code className="font-mono text-[11px] text-indigo-600 dark:text-indigo-400">{currentLang.assertionLib}</code>
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={onOpenLanguageModal}
+          className="self-start md:self-center px-4 py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 transition-all flex items-center gap-2 shadow-xs cursor-pointer hover:border-indigo-400 shrink-0"
+        >
+          <Settings className="w-3.5 h-3.5 text-indigo-500" />
+          <span>Switch Language Track</span>
+        </button>
       </div>
 
       {/* Progress & Stats Cards Grid */}

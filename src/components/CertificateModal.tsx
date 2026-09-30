@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Award, CheckCircle2, Download, Printer, X, ShieldCheck, Sparkles } from 'lucide-react';
+import { SupportedLanguage, SUPPORTED_LANGUAGES } from '../data/languages';
 
 interface CertificateModalProps {
   isOpen: boolean;
@@ -9,6 +10,7 @@ interface CertificateModalProps {
   completionDate: string;
   credentialId: string;
   progressPercentage: number;
+  selectedLanguage?: SupportedLanguage;
 }
 
 export const CertificateModal: React.FC<CertificateModalProps> = ({
@@ -18,10 +20,12 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
   onUpdateLearnerName,
   completionDate,
   credentialId,
-  progressPercentage
+  progressPercentage,
+  selectedLanguage = 'java'
 }) => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(learnerName);
+  const currentLang = SUPPORTED_LANGUAGES[selectedLanguage] || SUPPORTED_LANGUAGES.java;
 
   if (!isOpen) return null;
 
@@ -103,10 +107,16 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
             <p className="text-xs md:text-sm text-slate-600 dark:text-slate-300 max-w-xl mx-auto leading-relaxed">
               for successfully mastering and demonstrating verified competence in the enterprise curriculum:
               <br />
-              <strong className="text-slate-900 dark:text-white font-bold">
+              <strong className="text-slate-900 dark:text-white font-bold text-sm md:text-base">
                 Playwright with AI Testing & Next-Gen Automation
               </strong>
             </p>
+
+            {/* Language Track Specialization Tag */}
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <span className="text-sm">{currentLang.icon}</span>
+              <span>Specialization Track: <strong>Playwright with {currentLang.name} ({currentLang.frameworkRunner})</strong></span>
+            </div>
 
             {/* Competency Badges Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-4 border-t border-slate-200 dark:border-slate-800 text-[10px] text-slate-500 dark:text-slate-400">

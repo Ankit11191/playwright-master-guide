@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Bug, 
   Play, 
@@ -12,21 +12,31 @@ import {
   Check, 
   HelpCircle,
   Eye,
-  EyeOff
+  EyeOff,
+  Globe
 } from 'lucide-react';
-import { DEBUGGING_CHALLENGES, DebuggingChallenge } from '../data/debuggingChallenges';
+import { DEBUGGING_CHALLENGES, DebuggingChallenge, getChallengeForLanguage } from '../data/debuggingChallenges';
+import { SupportedLanguage, SUPPORTED_LANGUAGES } from '../data/languages';
 
 interface DebuggingLabProps {
   completedDebugChallenges: string[];
   onCompleteChallenge: (id: string, xp: number) => void;
+  selectedLanguage: SupportedLanguage;
+  onSelectLanguage?: (lang: SupportedLanguage) => void;
 }
 
 export const DebuggingLab: React.FC<DebuggingLabProps> = ({
   completedDebugChallenges,
-  onCompleteChallenge
+  onCompleteChallenge,
+  selectedLanguage,
+  onSelectLanguage
 }) => {
   const [selectedId, setSelectedId] = useState<string>(DEBUGGING_CHALLENGES[0].id);
-  const currentChallenge = DEBUGGING_CHALLENGES.find(c => c.id === selectedId) || DEBUGGING_CHALLENGES[0];
+  const [debugLanguage, setDebugLanguage] = useState<SupportedLanguage>(selectedLanguage || 'java');
+
+  const baseChallenge = DEBUGGING_CHALLENGES.find(c => c.id === selectedId) || DEBUGGING_CHALLENGES[0];
+  const currentChallenge = getChallengeForLanguage(baseChallenge, debugLanguage);
+  const activeLangInfo = SUPPORTED_LANGUAGES[debugLanguage] || SUPPORTED_LANGUAGES.java;
 
   const [code, setCode] = useState<string>(currentChallenge.failingCode);
   const [activeHintIndex, setActiveHintIndex] = useState<number>(-1);
@@ -37,17 +47,35 @@ export const DebuggingLab: React.FC<DebuggingLabProps> = ({
     message: string;
   }>({ status: 'idle', message: '' });
 
-  const handleSelectChallenge = (id: string) => {
-    const c = DEBUGGING_CHALLENGES.find(item => item.id === id) || DEBUGGING_CHALLENGES[0];
-    setSelectedId(id);
-    setCode(c.failingCode);
+  // Sync with global language changes
+  useEffect(() => {
+    if (selectedLanguage) {
+      setDebugLanguage(selectedLanguage);
+    }
+  }, [selectedLanguage]);
+
+  useEffect(() => {
+    const resolved = getChallengeForLanguage(baseChallenge, debugLanguage);
+    setCode(resolved.failingCode);
     setActiveHintIndex(-1);
     setShowSolution(false);
     setResult({ status: 'idle', message: '' });
+  }, [debugLanguage, selectedId]);
+
+  const handleSelectChallenge = (id: string) => {
+    setSelectedId(id);
+  };
+
+  const handleSwitchLanguage = (lang: SupportedLanguage) => {
+    setDebugLanguage(lang);
+    if (onSelectLanguage) {
+      onSelectLanguage(lang);
+    }
   };
 
   const handleReset = () => {
     setCode(currentChallenge.failingCode);
+    setShowSolution(false);
     setResult({ status: 'idle', message: '' });
   };
 
@@ -55,42 +83,52 @@ export const DebuggingLab: React.FC<DebuggingLabProps> = ({
     setShowSolution(!showSolution);
     if (!showSolution) {
       setCode(currentChallenge.fixedCode);
+    } else {
+      setCode(currentChallenge.failingCode);
     }
   };
 
   const handleRunRepair = () => {
     setIsVerifying(true);
-    setResult({ status: 'running', message: 'Re-running repaired test suite in Playwright container...' });
+    setResult({ 
+      status: 'running', 
+      message: `Re-running repaired ${activeLangInfo.name} (${activeLangInfo.frameworkRunner}) test in test container...` 
+    });
 
     setTimeout(() => {
       const userCode = code.trim();
       let resolved = false;
 
-      // Smart heuristic verification based on challenge id
-      if (currentChallenge.id === 'dbg-01') {
-        // Strict mode violation fix: must use getByRole with accessible name or specific selector
-        resolved = userCode.includes('getByRole') && userCode.includes('Save Changes') && !userCode.includes("locator('button').click()");
-      } else if (currentChallenge.id === 'dbg-02') {
-        // Flaky animation fix: remove force: true, assert dialog visibility
-        resolved = !userCode.includes('{ force: true }') && (userCode.includes('dialog') || userCode.includes('toBeVisible'));
-      } else if (currentChallenge.id === 'dbg-03') {
-        // Iframe fix: must use frameLocator
-        resolved = userCode.includes('frameLocator');
-      } else if (currentChallenge.id === 'dbg-04') {
-        // Worker state leak fix: eliminate shared mutable global let activeUserToken
-        resolved = userCode.includes('base.extend') || (userCode.includes('TestFixtures') && !userCode.includes('let activeUserToken'));
+      // Smart heuristic verification based on challenge id across all languages
+      if (baseChallenge.id === 'dbg-01') {
+        // Strict mode violation fix: must use getByRole or get_by_role with accessible name and avoid bare locator('button')
+        const hasRole = userCode.includes('getByRole') || userCode.includes('get_by_role');
+        const hasName = userCode.includes('Save Changes');
+        const noBareButton = !userCode.includes("locator('button').click()") && !userCode.includes('locator("button").click()');
+        resolved = hasRole && hasName && noBareButton;
+      } else if (baseChallenge.id === 'dbg-02') {
+        // Flaky animation fix: remove force click, assert dialog visibility
+        const noForce = !userCode.includes('force') && !userCode.includes('setForce');
+        const hasDialog = userCode.includes('dialog') || userCode.includes('DIALOG') || userCode.includes('toBeVisible') || userCode.includes('to_be_visible') || userCode.includes('isVisible');
+        resolved = noForce && hasDialog;
+      } else if (baseChallenge.id === 'dbg-03') {
+        // Iframe fix: must use frameLocator or frame_locator
+        resolved = userCode.includes('frameLocator') || userCode.includes('frame_locator') || userCode.includes('FrameLocator');
+      } else if (baseChallenge.id === 'dbg-04') {
+        // Worker state leak fix: ThreadLocal in Java, fixture in Python, base.extend in JS/TS
+        resolved = userCode.includes('ThreadLocal') || userCode.includes('base.extend') || (userCode.includes('fixture') && !userCode.includes('global active_user_token')) || userCode.includes('TestFixtures');
       }
 
       if (resolved) {
         setResult({
           status: 'resolved',
-          message: '✓ Flake eliminated! Test passed with zero timeouts and zero strict mode violations.'
+          message: `✓ Flake eliminated in ${activeLangInfo.name}! Test passed with zero timeouts and zero strict mode violations.`
         });
-        onCompleteChallenge(currentChallenge.id, 100);
+        onCompleteChallenge(baseChallenge.id, 100);
       } else {
         setResult({
           status: 'failed',
-          message: 'Test still failing. Root cause not yet resolved. Check hints for architectural direction.'
+          message: `Test still failing in ${activeLangInfo.name}. Root cause not yet resolved. Check hints for architectural direction.`
         });
       }
 
@@ -100,223 +138,227 @@ export const DebuggingLab: React.FC<DebuggingLabProps> = ({
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      {/* Title Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
+      {/* Header & Controls */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <Bug className="w-6 h-6 text-amber-500" />
-            <span>Enterprise Debugging Lab</span>
+            <span>Flake & Failure Diagnostics Lab</span>
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Diagnose and repair real-world automation failures: strict locator violations, animation race conditions, iframe drops, and parallel worker leaks.
+            Diagnose and repair real-world broken automation tests in Java, Python, JavaScript, and TypeScript.
           </p>
         </div>
 
-        {/* Challenge Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
-          {DEBUGGING_CHALLENGES.map((ch, idx) => {
-            const isDone = completedDebugChallenges.includes(ch.id);
-            const isSelected = selectedId === ch.id;
-            return (
-              <button
-                key={ch.id}
-                onClick={() => handleSelectChallenge(ch.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
-                  isSelected
-                    ? 'bg-amber-600 text-white shadow-sm'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                {isDone && <Check className="w-3 h-3 text-emerald-300" />}
-                <span>Bug {idx + 1}: {ch.category}</span>
-              </button>
-            );
-          })}
+        {/* Top Controls: Challenge & Language Switcher */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Language Switcher Tabs */}
+          <div className="flex items-center rounded-xl bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700">
+            {(['java', 'python', 'javascript', 'typescript'] as SupportedLanguage[]).map((langKey) => {
+              const lang = SUPPORTED_LANGUAGES[langKey];
+              const isActive = debugLanguage === langKey;
+              return (
+                <button
+                  key={langKey}
+                  onClick={() => handleSwitchLanguage(langKey)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    isActive
+                      ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                  }`}
+                >
+                  <span>{lang.icon}</span>
+                  <span>{lang.shortName}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Challenge Selector */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 scrollbar-none">
+            {DEBUGGING_CHALLENGES.map((c, i) => {
+              const isDone = completedDebugChallenges.includes(c.id);
+              const isSelected = selectedId === c.id;
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => handleSelectChallenge(c.id)}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1 cursor-pointer ${
+                    isSelected
+                      ? 'bg-amber-600 text-white shadow-xs'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  {isDone && <Check className="w-3 h-3 text-emerald-300" />}
+                  <span>Bug #{i + 1}: {c.category.split(' ')[0]}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
       {/* Main Two-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Failure Diagnostics & Stack Trace (5 cols) */}
+        {/* Left Column: Failure Diagnostic Report (5 cols) */}
         <div className="lg:col-span-5 space-y-4">
-          {/* Failure Context Box */}
-          <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
+          <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
             <div className="flex items-center justify-between">
-              <span className="px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-400 text-xs font-bold border border-amber-200 dark:border-amber-800">
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
                 {currentChallenge.category}
               </span>
-              <span className="text-xs font-semibold text-rose-500 dark:text-rose-400">
-                {currentChallenge.difficulty}
-              </span>
+              <span className="text-xs text-rose-500 font-semibold">{currentChallenge.difficulty}</span>
             </div>
 
-            <h2 className="text-base font-bold text-slate-900 dark:text-white">
-              {currentChallenge.title}
-            </h2>
+            <div>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                {currentChallenge.title} ({activeLangInfo.name})
+              </h2>
+              <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
+                <strong>Symptom:</strong> {currentChallenge.symptom}
+              </p>
+            </div>
 
-            <div className="p-3 rounded-xl bg-rose-50/70 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 text-xs text-rose-900 dark:text-rose-300 space-y-1">
-              <span className="font-bold flex items-center gap-1">
+            {/* Error Output Trace */}
+            <div className="space-y-1.5">
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
                 <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
-                Symptom Observed:
+                <span>Test Failure Traceback</span>
               </span>
-              <p className="leading-relaxed">{currentChallenge.symptom}</p>
-            </div>
-
-            {/* Error Stack Output */}
-            <div className="space-y-1">
-              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                Playwright Failure Output / Trace Log
-              </span>
-              <pre className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] font-mono text-rose-300 whitespace-pre-wrap leading-relaxed overflow-x-auto">
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-rose-300 font-mono text-[11px] leading-relaxed overflow-x-auto whitespace-pre-wrap max-h-48 scrollbar-thin">
                 {currentChallenge.errorOutput}
-              </pre>
+              </div>
             </div>
 
-            {/* Hints */}
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+            {/* Progressive Hints */}
+            <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                  <Lightbulb className="w-4 h-4 text-amber-500" />
-                  Hints ({Math.max(0, activeHintIndex + 1)}/{currentChallenge.hints.length})
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Diagnostic Hints</span>
                 </span>
-                {activeHintIndex < currentChallenge.hints.length - 1 && (
-                  <button
-                    onClick={() => setActiveHintIndex(prev => prev + 1)}
-                    className="text-xs text-amber-600 dark:text-amber-400 font-semibold hover:underline cursor-pointer"
-                  >
-                    Next Hint
-                  </button>
-                )}
+                <button
+                  onClick={() => {
+                    if (activeHintIndex < currentChallenge.hints.length - 1) {
+                      setActiveHintIndex(prev => prev + 1);
+                    }
+                  }}
+                  disabled={activeHintIndex >= currentChallenge.hints.length - 1}
+                  className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline disabled:opacity-40 disabled:no-underline cursor-pointer"
+                >
+                  {activeHintIndex === -1 ? 'Show Hint 1' : activeHintIndex < currentChallenge.hints.length - 1 ? 'Next Hint' : 'All Hints Revealed'}
+                </button>
               </div>
 
               {activeHintIndex >= 0 && (
-                <div className="space-y-1.5">
-                  {currentChallenge.hints.slice(0, activeHintIndex + 1).map((h, i) => (
-                    <p key={i} className="text-xs text-slate-600 dark:text-slate-300 p-2 rounded bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800">
-                      {h}
-                    </p>
+                <div className="space-y-1.5 animate-fadeIn">
+                  {currentChallenge.hints.slice(0, activeHintIndex + 1).map((hint, idx) => (
+                    <div 
+                      key={idx}
+                      className="p-3 rounded-xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 text-xs text-amber-900 dark:text-amber-200 leading-relaxed"
+                    >
+                      {hint}
+                    </div>
                   ))}
                 </div>
               )}
             </div>
+
+            {/* Root Cause & Production Prevention (Revealed when resolved) */}
+            {result.status === 'resolved' && (
+              <div className="p-4 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 space-y-3 animate-fadeIn">
+                <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-bold text-xs">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>Production Prevention Strategy</span>
+                </div>
+                <div className="text-xs text-slate-700 dark:text-slate-300 space-y-1.5 leading-relaxed">
+                  <p><strong>Root Cause:</strong> {currentChallenge.rootCause}</p>
+                  <p><strong>Architecture Rule:</strong> {currentChallenge.productionPreventionStrategy}</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Right Column: Code Editor & Fix Validator (7 cols) */}
+        {/* Right Column: Code Repair Editor (7 cols) */}
         <div className="lg:col-span-7 space-y-4">
-          <div className="rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 shadow-md">
-            {/* Toolbar */}
-            <div className="flex flex-wrap items-center justify-between px-4 py-2.5 bg-slate-900 border-b border-slate-800 gap-2">
-              <div className="flex items-center gap-2 text-xs font-mono text-slate-300">
-                <Terminal className="w-4 h-4 text-amber-400" />
-                <span>broken-test.spec.ts</span>
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-950 text-slate-100 overflow-hidden shadow-sm flex flex-col">
+            {/* Editor Top Toolbar */}
+            <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900 border-b border-slate-800 text-xs">
+              <div className="flex items-center gap-2 font-mono text-slate-300">
+                <Terminal className="w-3.5 h-3.5 text-amber-400" />
+                <span>{currentChallenge.filename}</span>
+                <span className="text-[11px] text-slate-500">({activeLangInfo.name})</span>
               </div>
 
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleReset}
-                  className="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium flex items-center gap-1 transition-colors cursor-pointer"
+                  className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors"
                 >
-                  <RotateCcw className="w-3.5 h-3.5" />
+                  <RotateCcw className="w-3 h-3" />
                   <span>Reset</span>
                 </button>
 
                 <button
                   onClick={handleToggleSolution}
-                  className="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium flex items-center gap-1 transition-colors cursor-pointer"
+                  className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-amber-400 text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors"
                 >
-                  {showSolution ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  {showSolution ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                   <span>{showSolution ? 'Hide Solution' : 'View Fix'}</span>
                 </button>
 
                 <button
                   onClick={handleRunRepair}
                   disabled={isVerifying}
-                  className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                    isVerifying
-                      ? 'bg-amber-800 text-amber-200 cursor-not-allowed'
-                      : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md hover:shadow-amber-500/20'
-                  }`}
+                  className="px-4 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-sm disabled:opacity-50"
                 >
                   <Play className="w-3.5 h-3.5 fill-current" />
-                  <span>{isVerifying ? 'Diagnosing...' : 'Test Repaired Code'}</span>
+                  <span>{isVerifying ? 'Verifying...' : 'Verify Fix'}</span>
                 </button>
               </div>
             </div>
 
             {/* Code Editor */}
-            <textarea
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              spellCheck={false}
-              rows={14}
-              className="w-full p-4 font-mono text-xs md:text-sm text-slate-100 bg-slate-950 resize-y focus:outline-none focus:ring-1 focus:ring-amber-500/50 leading-relaxed"
-            />
+            <div className="relative">
+              <textarea
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                rows={16}
+                spellCheck={false}
+                className="w-full p-4 font-mono text-xs md:text-sm bg-slate-950 text-slate-100 resize-y focus:outline-none focus:ring-1 focus:ring-amber-500/50 leading-relaxed scrollbar-thin"
+              />
+            </div>
 
-            {/* Execution Result Box */}
-            <div className="border-t border-slate-800 bg-slate-900/90 p-4 space-y-2">
-              <span className="text-xs font-mono text-slate-400 flex items-center gap-1.5">
-                <Terminal className="w-3.5 h-3.5 text-slate-400" />
-                Diagnostic Engine Output
-              </span>
+            {/* Verification Result Output */}
+            <div className="p-4 bg-slate-900 border-t border-slate-800">
+              {result.status === 'idle' && (
+                <span className="text-xs text-slate-500 font-mono">
+                  Modify the failing code in {activeLangInfo.name} and click &quot;Verify Fix&quot; to test your diagnostic repair.
+                </span>
+              )}
 
-              {result.status === 'idle' ? (
-                <p className="text-xs font-mono text-slate-500">
-                  Modify the broken code above to address the root cause, then click "Test Repaired Code".
-                </p>
-              ) : result.status === 'running' ? (
-                <div className="flex items-center gap-2 text-xs font-mono text-amber-400 animate-pulse">
-                  <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+              {result.status === 'running' && (
+                <span className="text-xs text-amber-400 font-mono animate-pulse">
+                  {result.message}
+                </span>
+              )}
+
+              {result.status === 'resolved' && (
+                <div className="flex items-center gap-2 text-xs font-mono text-emerald-400 font-bold animate-fadeIn">
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
                   <span>{result.message}</span>
                 </div>
-              ) : result.status === 'resolved' ? (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 font-mono">
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>DEFECT RESOLVED (+100 XP)</span>
-                  </div>
-                  <p className="text-xs font-mono text-emerald-300 bg-emerald-950/20 p-2.5 rounded-lg border border-emerald-900/30">
-                    {result.message}
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-xs font-bold text-rose-400 font-mono">
-                    <XCircle className="w-4 h-4" />
-                    <span>REPAIR INCOMPLETE</span>
-                  </div>
-                  <p className="text-xs font-mono text-rose-300 bg-rose-950/20 p-2.5 rounded-lg border border-rose-900/30">
-                    {result.message}
-                  </p>
+              )}
+
+              {result.status === 'failed' && (
+                <div className="flex items-center gap-2 text-xs font-mono text-rose-400 font-bold animate-fadeIn">
+                  <XCircle className="w-4 h-4 shrink-0" />
+                  <span>{result.message}</span>
                 </div>
               )}
             </div>
           </div>
-
-          {/* Root Cause & Production Prevention (Revealed upon success or solution toggle) */}
-          {(result.status === 'resolved' || showSolution) && (
-            <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-900/50 shadow-sm space-y-4 animate-fadeIn">
-              <div className="space-y-1.5">
-                <h4 className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4" />
-                  Engineering Root Cause Analysis
-                </h4>
-                <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
-                  {currentChallenge.rootCause}
-                </p>
-              </div>
-
-              <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-slate-800">
-                <h4 className="text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4" />
-                  Production Prevention Architecture
-                </h4>
-                <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
-                  {currentChallenge.productionPreventionStrategy}
-                </p>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

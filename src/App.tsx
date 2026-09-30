@@ -22,10 +22,31 @@ import { InteractiveQuiz } from './components/InteractiveQuiz';
 import { JavaCompilerConsole } from './components/JavaCompilerConsole';
 import { CertificateModal } from './components/CertificateModal';
 import { ExportModal } from './components/ExportModal';
+import { LanguageSelectionModal } from './components/LanguageSelectionModal';
+import { SupportedLanguage } from './data/languages';
 
 export default function App() {
   // Navigation State
   const [activeTab, setActiveTab] = useState<AcademyTab>('dashboard');
+
+  // Selected Programming Language Track (Default preference: Java)
+  const [selectedLanguage, setSelectedLanguage] = useState<SupportedLanguage>(() => {
+    try {
+      const saved = localStorage.getItem('pw_selected_language');
+      return (saved as SupportedLanguage) || 'java';
+    } catch {
+      return 'java';
+    }
+  });
+
+  // Entry criteria modal: open if user has not yet chosen their learning language
+  const [isLanguageModalOpen, setIsLanguageModalOpen] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('pw_language_chosen') !== 'true';
+    } catch {
+      return true;
+    }
+  });
 
   // Learner Progress State with LocalStorage
   const [completedLessons, setCompletedLessons] = useState<string[]>(() => {
@@ -210,6 +231,16 @@ export default function App() {
     );
   };
 
+  const handleSelectLanguage = (lang: SupportedLanguage) => {
+    setSelectedLanguage(lang);
+    try {
+      localStorage.setItem('pw_selected_language', lang);
+      localStorage.setItem('pw_language_chosen', 'true');
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   // Calculate progress percentage for certificate
   const totalTasks = 8 + 6 + 4 + 4;
   const doneTasks = completedLessons.length + completedExercises.length + completedDebugChallenges.length + completedProjects.length;
@@ -223,6 +254,8 @@ export default function App() {
         setActiveTab={setActiveTab}
         streakDays={streakDays}
         xp={xp}
+        selectedLanguage={selectedLanguage}
+        onOpenLanguageModal={() => setIsLanguageModalOpen(true)}
         onOpenCertificate={() => setIsCertificateOpen(true)}
         onOpenExport={() => setIsExportOpen(true)}
       />
@@ -240,6 +273,8 @@ export default function App() {
               xp,
               streakDays
             }}
+            selectedLanguage={selectedLanguage}
+            onOpenLanguageModal={() => setIsLanguageModalOpen(true)}
             onNavigateTab={(tab) => setActiveTab(tab as AcademyTab)}
             onOpenCertificate={() => setIsCertificateOpen(true)}
           />
@@ -250,6 +285,8 @@ export default function App() {
             completedLessons={completedLessons}
             onToggleLesson={handleToggleLesson}
             onNavigateTab={(tab) => setActiveTab(tab as AcademyTab)}
+            selectedLanguage={selectedLanguage}
+            onSelectLanguage={handleSelectLanguage}
           />
         )}
 
@@ -257,6 +294,8 @@ export default function App() {
           <CodePracticeLab
             completedExercises={completedExercises}
             onCompleteExercise={handleCompleteExercise}
+            selectedLanguage={selectedLanguage}
+            onSelectLanguage={handleSelectLanguage}
           />
         )}
 
@@ -264,6 +303,8 @@ export default function App() {
           <DebuggingLab
             completedDebugChallenges={completedDebugChallenges}
             onCompleteChallenge={handleCompleteDebugChallenge}
+            selectedLanguage={selectedLanguage}
+            onSelectLanguage={handleSelectLanguage}
           />
         )}
 
@@ -328,6 +369,15 @@ export default function App() {
         onOpenMobileMenu={() => setActiveTab('dashboard')}
       />
 
+      {/* Language Selection Modal (Entry criteria & Switcher) */}
+      <LanguageSelectionModal
+        isOpen={isLanguageModalOpen}
+        onClose={() => setIsLanguageModalOpen(false)}
+        currentLanguage={selectedLanguage}
+        onSelectLanguage={handleSelectLanguage}
+        isInitialOnboarding={localStorage.getItem('pw_language_chosen') !== 'true'}
+      />
+
       {/* Certificate Modal */}
       <CertificateModal
         isOpen={isCertificateOpen}
@@ -337,6 +387,7 @@ export default function App() {
         completionDate={new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
         credentialId="PW-AI-2026-8941"
         progressPercentage={progressPercent}
+        selectedLanguage={selectedLanguage}
       />
 
       {/* Export Modal */}

@@ -81,15 +81,15 @@ define(['./workbox-afac4cd2'], (function (workbox) { 'use strict';
     "revision": "402b66900e731ca748771b6fc5e7a068"
   }, {
     "url": "index.html",
-    "revision": "bbf2869cb3eb5189a4fbe483856694fe"
+    "revision": "f3b69faef57e4c0e93699b8338f4c613"
   }, {
     "url": "icon.svg",
     "revision": "338d79da56654fe98992f92ed473e0d7"
   }, {
-    "url": "assets/index-DSPdWixt.js",
+    "url": "assets/index-kGMEeRoz.js",
     "revision": null
   }, {
-    "url": "assets/index-CiquRl3h.css",
+    "url": "assets/index-L9CdCmyL.css",
     "revision": null
   }, {
     "url": "icon.svg",

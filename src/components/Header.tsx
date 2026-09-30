@@ -17,8 +17,11 @@ import {
   Menu,
   X,
   Sparkles,
-  Download
+  Download,
+  ChevronDown,
+  Globe
 } from 'lucide-react';
+import { SupportedLanguage, SUPPORTED_LANGUAGES } from '../data/languages';
 
 export type AcademyTab = 
   | 'dashboard'
@@ -38,6 +41,8 @@ interface HeaderProps {
   setActiveTab: (tab: AcademyTab) => void;
   streakDays: number;
   xp: number;
+  selectedLanguage: SupportedLanguage;
+  onOpenLanguageModal: () => void;
   onOpenCertificate: () => void;
   onOpenExport: () => void;
 }
@@ -47,10 +52,13 @@ export const Header: React.FC<HeaderProps> = ({
   setActiveTab,
   streakDays,
   xp,
+  selectedLanguage,
+  onOpenLanguageModal,
   onOpenCertificate,
   onOpenExport
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const currentLang = SUPPORTED_LANGUAGES[selectedLanguage] || SUPPORTED_LANGUAGES.java;
 
   const navItems: { id: AcademyTab; label: string; icon: React.ReactNode; badge?: string }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: <Sparkles className="w-3.5 h-3.5 text-indigo-500" /> },
@@ -110,6 +118,17 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Right Metrics & Quick Actions */}
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* Global Language Switcher */}
+            <button
+              onClick={onOpenLanguageModal}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-indigo-400 dark:hover:border-indigo-500 text-xs font-semibold shadow-xs cursor-pointer transition-all hover:scale-102"
+              title={`Active Learning Language: ${currentLang.name}. Click to switch.`}
+            >
+              <span className="text-sm">{currentLang.icon}</span>
+              <span className="font-bold text-slate-800 dark:text-slate-200">{currentLang.shortName}</span>
+              <ChevronDown className="w-3 h-3 text-slate-400" />
+            </button>
+
             {/* Streak & XP */}
             <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs">
               <span className="flex items-center gap-1 font-bold text-amber-600 dark:text-amber-400" title="Streak Days">
@@ -154,24 +173,41 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Mobile Dropdown Nav Menu */}
         {mobileMenuOpen && (
-          <div className="xl:hidden py-3 border-t border-slate-200 dark:border-slate-800 grid grid-cols-2 gap-1.5 animate-fadeIn">
-            {navItems.map(item => (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setActiveTab(item.id);
-                  setMobileMenuOpen(false);
-                }}
-                className={`p-2 rounded-lg text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
-                  activeTab === item.id
-                    ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-900 dark:text-indigo-200 font-bold'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-                }`}
-              >
-                {item.icon}
-                <span>{item.label}</span>
-              </button>
-            ))}
+          <div className="xl:hidden py-3 border-t border-slate-200 dark:border-slate-800 space-y-3 animate-fadeIn">
+            {/* Mobile Language Switcher Banner */}
+            <button
+              onClick={() => {
+                onOpenLanguageModal();
+                setMobileMenuOpen(false);
+              }}
+              className="w-full p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-bold flex items-center justify-between cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-base">{currentLang.icon}</span>
+                <span>Language Track: <strong>{currentLang.name}</strong></span>
+              </div>
+              <span className="text-[11px] underline">Change Track</span>
+            </button>
+
+            <div className="grid grid-cols-2 gap-1.5">
+              {navItems.map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`p-2 rounded-lg text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
+                    activeTab === item.id
+                      ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-900 dark:text-indigo-200 font-bold'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>

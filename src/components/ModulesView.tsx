@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   BookOpen, 
   ChevronRight, 
@@ -13,30 +13,47 @@ import {
   Code2, 
   Copy, 
   Check, 
-  Layers
+  Layers,
+  Globe
 } from 'lucide-react';
-import { ACADEMY_MODULES, AcademyModule, Lesson } from '../data/academyModules';
+import { ACADEMY_MODULES, AcademyModule, Lesson, getLessonCodeForLanguage } from '../data/academyModules';
+import { SupportedLanguage, SUPPORTED_LANGUAGES } from '../data/languages';
 
 interface ModulesViewProps {
   completedLessons: string[];
   onToggleLesson: (lessonId: string) => void;
   onNavigateTab: (tab: string) => void;
+  selectedLanguage: SupportedLanguage;
+  onSelectLanguage?: (lang: SupportedLanguage) => void;
 }
 
 export const ModulesView: React.FC<ModulesViewProps> = ({
   completedLessons,
   onToggleLesson,
-  onNavigateTab
+  onNavigateTab,
+  selectedLanguage,
+  onSelectLanguage
 }) => {
   const [selectedModuleId, setSelectedModuleId] = useState<string>(ACADEMY_MODULES[0].id);
   const [selectedLessonId, setSelectedLessonId] = useState<string>(ACADEMY_MODULES[0].lessons[0].id);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [codeViewLanguage, setCodeViewLanguage] = useState<SupportedLanguage>(selectedLanguage || 'java');
+
+  // Sync with global language changes
+  useEffect(() => {
+    if (selectedLanguage) {
+      setCodeViewLanguage(selectedLanguage);
+    }
+  }, [selectedLanguage]);
 
   const currentModule = ACADEMY_MODULES.find(m => m.id === selectedModuleId) || ACADEMY_MODULES[0];
   const currentLesson = currentModule.lessons.find(l => l.id === selectedLessonId) || currentModule.lessons[0];
 
-  const handleCopyCode = (code: string) => {
-    navigator.clipboard.writeText(code);
+  const activeLessonCode = getLessonCodeForLanguage(currentLesson, codeViewLanguage);
+  const activeLangInfo = SUPPORTED_LANGUAGES[codeViewLanguage] || SUPPORTED_LANGUAGES.java;
+
+  const handleCopyCode = (codeText: string) => {
+    navigator.clipboard.writeText(codeText);
     setCopiedCode(true);
     setTimeout(() => setCopiedCode(false), 2000);
   };
@@ -247,29 +264,66 @@ export const ModulesView: React.FC<ModulesViewProps> = ({
               </p>
             </div>
 
-            {/* Executable Minimal Working Example */}
+            {/* Executable Production Code Pattern with Multi-Language Switcher */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
                   <Terminal className="w-4 h-4 text-emerald-500" />
-                  <span>Production Code Pattern</span>
-                </h3>
-                <button
-                  onClick={() => handleCopyCode(currentLesson.minimalWorkingExample)}
-                  className="px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors"
-                >
-                  {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copiedCode ? 'Copied' : 'Copy Code'}</span>
-                </button>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                    Production Code Pattern
+                  </h3>
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 font-mono">
+                    {activeLangInfo.name}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {/* Language Tab Switcher directly on code block */}
+                  <div className="flex items-center rounded-lg bg-slate-100 dark:bg-slate-800 p-0.5 border border-slate-200 dark:border-slate-700">
+                    {(['java', 'python', 'javascript', 'typescript'] as SupportedLanguage[]).map((langKey) => {
+                      const lang = SUPPORTED_LANGUAGES[langKey];
+                      const isActive = codeViewLanguage === langKey;
+                      return (
+                        <button
+                          key={langKey}
+                          onClick={() => {
+                            setCodeViewLanguage(langKey);
+                            if (onSelectLanguage) onSelectLanguage(langKey);
+                          }}
+                          className={`px-2 py-1 rounded text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                            isActive
+                              ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                              : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                          }`}
+                          title={`View in ${lang.name}`}
+                        >
+                          <span>{lang.icon}</span>
+                          <span>{lang.shortName}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    onClick={() => handleCopyCode(activeLessonCode.code)}
+                    className="px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors"
+                  >
+                    {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedCode ? 'Copied' : 'Copy'}</span>
+                  </button>
+                </div>
               </div>
 
               <div className="relative rounded-xl overflow-hidden bg-slate-950 border border-slate-800">
                 <div className="flex items-center justify-between px-4 py-2 bg-slate-900 border-b border-slate-800 text-[11px] text-slate-400 font-mono">
-                  <span>example.spec.ts</span>
-                  <span>TypeScript / Playwright</span>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80"></span>
+                    <span className="text-slate-200 font-semibold">{activeLessonCode.filename}</span>
+                  </div>
+                  <span className="text-slate-400">{activeLangInfo.name} / {activeLangInfo.frameworkRunner}</span>
                 </div>
                 <pre className="p-4 text-xs font-mono text-slate-200 overflow-x-auto leading-relaxed">
-                  <code>{currentLesson.minimalWorkingExample}</code>
+                  <code>{activeLessonCode.code}</code>
                 </pre>
               </div>
             </div>
@@ -277,10 +331,10 @@ export const ModulesView: React.FC<ModulesViewProps> = ({
             {/* Line-by-Line Technical Breakdown */}
             <div className="space-y-2">
               <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                Technical Execution Breakdown
+                Technical Execution Breakdown ({activeLangInfo.name})
               </h4>
               <ul className="space-y-2">
-                {currentLesson.codeExplanation.map((point, idx) => (
+                {activeLessonCode.explanation.map((point, idx) => (
                   <li key={idx} className="text-xs text-slate-600 dark:text-slate-300 flex items-start gap-2">
                     <span className="w-5 h-5 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
                       {idx + 1}
